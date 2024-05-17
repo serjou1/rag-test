@@ -11,17 +11,18 @@ MODEL = "llama3"
 
 class SpHelper:
     def __init__(self):
+        self.retriever = None
         self.chain = None
         self.model = Ollama(model=MODEL)
 
     def initialize(self):
         print('Initializing vector store')
-        retriever = initialize_vector_store_retriever()
+        self.retriever = initialize_vector_store_retriever()
         print('Vector store initialized')
         prompt = get_prompt()
 
         self.chain = (
-                {"context": retriever, "question": RunnablePassthrough()}
+                {"context": self.retriever, "question": RunnablePassthrough()}
                 | prompt
                 | self.model
                 | StrOutputParser()
@@ -31,4 +32,4 @@ class SpHelper:
         return self.chain.invoke(question)
 
     def find_episode(self, description: str):
-        pass
+        return self.retriever.invoke(description)[0].metadata['episode_name']
