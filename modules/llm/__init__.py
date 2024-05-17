@@ -1,30 +1,34 @@
 from langchain_community.llms import Ollama
-# todo change AsyncChromiumLoader to AsyncHtmlLoader
-from langchain_community.document_loaders import AsyncChromiumLoader
-from langchain_community.embeddings import OllamaEmbeddings
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
 
-from links import links
+from modules.llm.services.get_prompt import get_prompt
+from modules.llm.services.vector_store_loader import initialize_vector_store_retriever
 
 OLLAMA_URL = "http://localhost:11434"
 MODEL = "llama3"
 
 
-def initialize():
-    model = Ollama(model=MODEL)
+class SpHelper:
+    def __init__(self):
+        self.chain = None
+        self.model = Ollama(model=MODEL)
 
-    __initialize_vector_store()
-    pass
+    def initialize(self):
+        print('Initializing vector store')
+        retriever = initialize_vector_store_retriever()
+        print('Vector store initialized')
+        prompt = get_prompt()
 
+        self.chain = (
+                {"context": retriever, "question": RunnablePassthrough()}
+                | prompt
+                | self.model
+                | StrOutputParser()
+        )
 
-def ask(question: str):
-    pass
+    def ask(self, question: str):
+        return self.chain.invoke(question)
 
-
-def find_episode(description: str):
-    pass
-
-
-def __initialize_vector_store():
-    loader = AsyncChromiumLoader(links)
-    scripts_html = loader.load()
-    embeddings = OllamaEmbeddings(model=MODEL)
+    def find_episode(self, description: str):
+        pass
